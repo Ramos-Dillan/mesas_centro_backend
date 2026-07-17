@@ -1,7 +1,15 @@
-﻿import os
+﻿import cloudinary
+import cloudinary.uploader
+from config import Config
+import os
 import uuid
 from contextlib import contextmanager
 
+cloudinary.config(
+    cloud_name=Config.CLOUDINARY_CLOUD_NAME,
+    api_key=Config.CLOUDINARY_API_KEY,
+    api_secret=Config.CLOUDINARY_API_SECRET
+)
 
 from db.db import SessionLocal
 from db.models import Table
@@ -74,14 +82,14 @@ def _save_image(image):
     if not allowed_file(image.filename):
         raise ValueError("Solo se permiten imágenes PNG, JPG, JPEG o WEBP.")
 
-    if not os.path.exists(UPLOAD_FOLDER):
-        os.makedirs(UPLOAD_FOLDER)
-
-    extension = image.filename.rsplit(".", 1)[1].lower()
-    filename = f"{uuid.uuid4()}.{extension}"
-    filepath = os.path.join(UPLOAD_FOLDER, filename).replace("\\", "/")
-    image.save(filepath)
-    return filepath
+    try:
+        result = cloudinary.uploader.upload(
+            image,
+            folder="mesas_centro/tables"
+        )
+        return result["secure_url"]
+    except Exception as e:
+        raise ValueError(f"Error subiendo imagen a Cloudinary: {str(e)}")
 
 
 
